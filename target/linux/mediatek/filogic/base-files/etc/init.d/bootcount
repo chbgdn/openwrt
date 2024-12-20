@@ -15,5 +15,14 @@ boot() {
 	zyxel,ex5700-telenor)
 		fw_setenv uboot_bootcount 0
 		;;
+	xiaomi,mi-router-ax3000t|\
+	xiaomi,mi-router-wr30u-stock|\
+	xiaomi,redmi-router-ax6000-stock)
+		local boot_rootfs=$(fw_printenv -n flag_boot_rootfs 2>/dev/null)
+		fw_setenv flag_boot_success 1
+		fw_setenv flag_last_success ${boot_rootfs}
+		fw_setenv flag_try_sys1_failed 0
+		fw_setenv flag_try_sys2_failed 0
+		;;
 	esac
 }
