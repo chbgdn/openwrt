@@ -53,7 +53,8 @@ define Device/gemtek_w1700k
   DEVICE_ALT1_MODEL := W1700K
   DEVICE_ALT2_VENDOR := Quantum Fiber
   DEVICE_ALT2_MODEL := W1700K
-  DEVICE_PACKAGES := kmod-i2c-an7581 kmod-hwmon-nct7802 \
+  DEVICE_PACKAGES := airoha-en7581-mt7996-npu-firmware \
+		    kmod-i2c-an7581 kmod-hwmon-nct7802 \
 		    kmod-mt7996-firmware kmod-phy-rtl8261n \
 		    wpad-basic-mbedtls
   IMAGE/sysupgrade.bin := sysupgrade-tar | append-metadata
