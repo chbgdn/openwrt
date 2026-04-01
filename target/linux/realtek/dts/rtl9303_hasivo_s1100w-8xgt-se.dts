@@ -133,11 +133,43 @@
 	PHY_C45(20, 3)
 };
 
+&phy0 {
+	realtek,patch-rtk-serdes;
+};
+
+&phy8 {
+	realtek,patch-rtk-serdes;
+};
+
+&phy16 {
+	realtek,patch-rtk-serdes;
+};
+
+&phy20 {
+	realtek,patch-rtk-serdes;
+};
+
 &mdio_bus3 {
 	PHY_C45(24, 16)
 	PHY_C45(25, 17)
 	PHY_C45(26, 18)
 	PHY_C45(27, 19)
+};
+
+&phy24 {
+	realtek,patch-rtk-serdes;
+};
+
+&phy25 {
+	realtek,patch-rtk-serdes;
+};
+
+&phy26 {
+	realtek,patch-rtk-serdes;
+};
+
+&phy27 {
+	realtek,patch-rtk-serdes;
 };
 
 &switch0 {
