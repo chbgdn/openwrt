@@ -22,8 +22,6 @@ Signed-off-by: Bohdan Chubuk <chbgdn@gmail.com>
  net/netfilter/nft_flow_offload.c      |  20 +++-
  3 files changed, 150 insertions(+), 5 deletions(-)
 
-diff --git a/include/net/netfilter/nf_flow_table.h b/include/net/netfilter/nf_flow_table.h
-index 65cf5a4d56f1..6211758e6cd4 100644
 --- a/include/net/netfilter/nf_flow_table.h
 +++ b/include/net/netfilter/nf_flow_table.h
 @@ -14,6 +14,8 @@
@@ -35,7 +33,7 @@ index 65cf5a4d56f1..6211758e6cd4 100644
  struct nf_flow_rule;
  struct flow_offload;
  enum flow_offload_tuple_dir;
-@@ -285,6 +287,11 @@ nf_flow_table_offload_del_cb(struct nf_flowtable *flow_table,
+@@ -286,6 +288,11 @@ nf_flow_table_offload_del_cb(struct nf_f
  void flow_offload_route_init(struct flow_offload *flow,
  			     struct nf_flow_route *route);
  
@@ -47,8 +45,6 @@ index 65cf5a4d56f1..6211758e6cd4 100644
  int flow_offload_add(struct nf_flowtable *flow_table, struct flow_offload *flow);
  void flow_offload_refresh(struct nf_flowtable *flow_table,
  			  struct flow_offload *flow, bool force);
-diff --git a/net/netfilter/nf_flow_table_path.c b/net/netfilter/nf_flow_table_path.c
-index 77d0899320dc..72f50547c924 100644
 --- a/net/netfilter/nf_flow_table_path.c
 +++ b/net/netfilter/nf_flow_table_path.c
 @@ -5,6 +5,9 @@
@@ -61,8 +57,8 @@ index 77d0899320dc..72f50547c924 100644
  #include <linux/netfilter/nf_conntrack_common.h>
  #include <linux/netfilter/nf_tables.h>
  #include <net/ip.h>
-@@ -289,3 +292,128 @@ int nft_flow_route(const struct nft_pktinfo *pkt, const struct nf_conn *ct,
- 	return 0;
+@@ -311,3 +314,132 @@ err_dst_release:
+ 	return -ENOENT;
  }
  EXPORT_SYMBOL_GPL(nft_flow_route);
 +
@@ -75,7 +71,7 @@ index 77d0899320dc..72f50547c924 100644
 +				    unsigned char *dst_ha)
 +{
 +	struct flow_offload_tuple_rhash *th = flow->tuplehash;
-+	struct net_device_path_ctx ctx = {};
++	struct net_device_path_ctx ctx = { .ieee80211 = true };
 +	struct net_device_path_stack stack;
 +	struct nft_forward_info info = {};
 +	int i, j = 0;
@@ -106,7 +102,8 @@ index 77d0899320dc..72f50547c924 100644
 +	if (dev_fill_bridge_path(&ctx, &stack) < 0)
 +		return -1;
 +
-+	nft_dev_path_info(&stack, &info, dst_ha, &ft->data);
++	if (nft_dev_path_info(&stack, &info, dst_ha, &ft->data) < 0)
++		return -1;
 +
 +	if (!info.indev || info.indev != dst_dev)
 +		return -1;
@@ -125,6 +122,9 @@ index 77d0899320dc..72f50547c924 100644
 +	ether_addr_copy(th[dir].tuple.out.h_source, src_ha);
 +	ether_addr_copy(th[dir].tuple.out.h_dest, dst_ha);
 +	th[dir].tuple.out.ifidx = info.outdev->ifindex;
++	th[dir].tuple.bridge_path = info.bridge_path;
++	th[dir].tuple.bridge_vlan = info.bridge_vlan;
++	th[dir].tuple.port_vlans = info.port_vlans;
 +	th[dir].tuple.xmit_type = FLOW_OFFLOAD_XMIT_DIRECT;
 +
 +	return 0;
@@ -190,8 +190,6 @@ index 77d0899320dc..72f50547c924 100644
 +	return 0;
 +}
 +EXPORT_SYMBOL_GPL(flow_offload_bridge_init);
-diff --git a/net/netfilter/nft_flow_offload.c b/net/netfilter/nft_flow_offload.c
-index b386c5a1ab53..cb67f82245b2 100644
 --- a/net/netfilter/nft_flow_offload.c
 +++ b/net/netfilter/nft_flow_offload.c
 @@ -6,6 +6,7 @@
@@ -202,7 +200,7 @@ index b386c5a1ab53..cb67f82245b2 100644
  #include <linux/netfilter/nf_conntrack_common.h>
  #include <linux/netfilter/nf_tables.h>
  #include <net/ip.h>
-@@ -52,6 +53,7 @@ static void nft_flow_offload_eval(const struct nft_expr *expr,
+@@ -52,6 +53,7 @@ static void nft_flow_offload_eval(const
  {
  	struct nft_flow_offload *priv = nft_expr_priv(expr);
  	struct nf_flowtable *flowtable = &priv->flowtable->data;
@@ -210,7 +208,7 @@ index b386c5a1ab53..cb67f82245b2 100644
  	struct tcphdr _tcph, *tcph = NULL;
  	struct nf_flow_route route = {};
  	enum ip_conntrack_info ctinfo;
-@@ -108,14 +110,20 @@ static void nft_flow_offload_eval(const struct nft_expr *expr,
+@@ -108,14 +110,20 @@ static void nft_flow_offload_eval(const
  		goto out;
  
  	dir = CTINFO2DIR(ctinfo);
@@ -234,7 +232,7 @@ index b386c5a1ab53..cb67f82245b2 100644
  	if (tcph)
  		flow_offload_ct_tcp(ct);
  
-@@ -129,8 +137,10 @@ static void nft_flow_offload_eval(const struct nft_expr *expr,
+@@ -129,8 +137,10 @@ static void nft_flow_offload_eval(const
  err_flow_add:
  	flow_offload_free(flow);
  err_flow_alloc:
@@ -247,6 +245,3 @@ index b386c5a1ab53..cb67f82245b2 100644
  err_flow_route:
  	clear_bit(IPS_OFFLOAD_BIT, &ct->status);
  out:
--- 
-2.55.0
-
